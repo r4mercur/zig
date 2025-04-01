@@ -1,9 +1,14 @@
 const std = @import("std");
-const SAVE_FILE_PATH = "C:/Users/bjarn/Projects/zig/data/passwords.json";
+const SAVE_FILE_PATH = "YOUR_DIRECTORY";
 
-const Profile = struct {
+pub const Profile = struct {
     name: []const u8,
     password: []const u8,
+
+    pub fn deinit(self: Profile, allocator: std.mem.Allocator) void {
+        allocator.free(self.name);
+        allocator.free(self.password);
+    }
 };
 
 var profiles: std.ArrayList(Profile) = undefined;
@@ -22,14 +27,6 @@ fn checkOperation(arg: []const u8) Operation {
     return Operation.Unknown;
 }
 
-fn addProfileToList(name: []const u8, password: []const u8) !void {
-    const profile = Profile{
-        .name = name,
-        .password = password,
-    };
-    try profiles.append(profile);
-}
-
 fn removeProfileFromList(name: []const u8) !void {
     var index_to_remove: ?usize = null;
     for (profiles.items, 0..) |profile, index| {
@@ -41,18 +38,8 @@ fn removeProfileFromList(name: []const u8) !void {
 
     if (index_to_remove != null) {
         const index = index_to_remove.?;
-        var new_profiles = std.ArrayList(Profile).init(profiles.allocator);
-        defer new_profiles.deinit();
-
-        for (profiles.items, 0..) |profile, i| {
-            if (i != index) {
-                try new_profiles.append(profile);
-            }
-        }
-
-        profiles.clearAndFree();
-        profiles = new_profiles;
-
+        profiles.items[index].deinit(profiles.allocator);
+        _ = profiles.orderedRemove(index);
         std.debug.print("Profile removed: {s}\n", .{name});
         return;
     }
@@ -62,25 +49,54 @@ fn removeProfileFromList(name: []const u8) !void {
 fn loadProfilesFromFile() !void {
     const file = std.fs.openFileAbsolute(SAVE_FILE_PATH, .{}) catch |err| {
         if (err == error.FileNotFound) {
-            std.debug.print("File not found\n", .{SAVE_FILE_PATH});
+            std.debug.print("File not found: {s}\n", .{SAVE_FILE_PATH});
             return;
-        } else {
-            std.debug.print("Error opening file: {any}\n", .{err});
-            return err;
         }
+        return err;
     };
     defer file.close();
 
     const contents = try file.reader().readAllAlloc(profiles.allocator, 1024 * 10);
     defer profiles.allocator.free(contents);
 
-    // TODO: Handle JSON parsing errors
-    var parsed = try std.json.Value.jsonParse();
+    var parsed = try std.json.parseFromSlice([]const Profile, profiles.allocator, contents, .{
+        .allocate = .alloc_always,
+        .duplicate_field_behavior = .use_first,
+        .ignore_unknown_fields = true,
+    });
     defer parsed.deinit();
 
-    for (parsed.value.?) |profile| {
-        try profiles.append(profile);
+    for (profiles.items) |*profile| {
+        profile.deinit(profiles.allocator);
     }
+    profiles.clearAndFree();
+
+    for (parsed.value) |profile| {
+        const name_dup = try profiles.allocator.dupe(u8, profile.name);
+        const password_dup = try profiles.allocator.dupe(u8, profile.password);
+        try profiles.append(Profile{
+            .name = name_dup,
+            .password = password_dup,
+        });
+    }
+}
+
+fn addProfileToList(name: []const u8, password: []const u8) !void {
+    const name_dup = try profiles.allocator.dupe(u8, name);
+    const password_dup = try profiles.allocator.dupe(u8, password);
+
+    const profile = Profile{
+        .name = name_dup,
+        .password = password_dup,
+    };
+    try profiles.append(profile);
+}
+
+fn saveProfilesToFile() !void {
+    var file = try std.fs.createFileAbsolute(SAVE_FILE_PATH, .{});
+    defer file.close();
+
+    try std.json.stringify(profiles.items, .{}, file.writer());
 }
 
 pub fn main() !void {
@@ -110,6 +126,7 @@ pub fn main() !void {
         const name = args[2];
         const password = args[3];
         try addProfileToList(name, password);
+        try saveProfilesToFile();
         std.debug.print("Profile added: {s}, Password: {s}\n", .{ name, password });
     } else if (operation == Operation.Remove) {
         if (args.len < 3) {
@@ -119,6 +136,7 @@ pub fn main() !void {
 
         const name = args[2];
         try removeProfileFromList(name);
+        try saveProfilesToFile();
     } else if (operation == Operation.List) {
         for (profiles.items) |profile| {
             std.debug.print("Profile: {s}, Password: {s}\n", .{ profile.name, profile.password });
