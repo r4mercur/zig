@@ -102,6 +102,7 @@ fn saveProfilesToFile() !void {
 }
 
 pub fn main() !void {
+    // TODO: Use GeneralPurposeAllocator for dynamic data structures like ArrayList
     const allocator = std.heap.page_allocator;
 
     profiles = std.ArrayList(Profile).init(allocator);
