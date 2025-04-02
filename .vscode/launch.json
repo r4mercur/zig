@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cppvsdbg",
+            "request": "launch",
+            "name": "Debug Zig Program",
+            "program": "${workspaceFolder}/main.exe",
+            "args": ["list"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build-debug",
+            "console": "integratedTerminal"
+        }
+    ]
+}
