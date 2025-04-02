@@ -1,5 +1,5 @@
 const std = @import("std");
-const SAVE_FILE_PATH = "YOUR_DIRECTORY";
+const SAVE_FILE_PATH = "C:/Users/bjarn/Projects/zig/data/passwords.json";
 
 pub const Profile = struct {
     name: []const u8,
@@ -101,9 +101,17 @@ fn saveProfilesToFile() !void {
     try std.json.stringify(profiles.items, .{}, file.writer());
 }
 
+fn freeProfileMemory() void {
+    for (profiles.items) |*profile| {
+        profile.deinit(profiles.allocator);
+    }
+    profiles.clearAndFree();
+}
+
 pub fn main() !void {
-    // TODO: Use GeneralPurposeAllocator for dynamic data structures like ArrayList
-    const allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
 
     profiles = std.ArrayList(Profile).init(allocator);
     defer profiles.deinit();
@@ -115,6 +123,8 @@ pub fn main() !void {
 
     if (args.len < 2) {
         std.debug.print("No operation provided.\n", .{});
+
+        freeProfileMemory();
         return;
     }
 
@@ -161,4 +171,6 @@ pub fn main() !void {
     } else {
         std.debug.print("Unknown operation: {s}\n", .{args[1]});
     }
+
+    freeProfileMemory();
 }
