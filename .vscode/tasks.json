@@ -2,13 +2,20 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build-debug",
+            "label": "build",
             "type": "shell",
-            "command": "zig build-exe main.zig -O Debug",
+            "command": "zig build",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "build-debug",
+            "type": "shell",
+            "command": "zig build -Doptimize=Debug",
+            "group": "build",
             "problemMatcher": ["$gcc"]
         }
     ]
