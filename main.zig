@@ -16,6 +16,7 @@ var profiles: std.ArrayList(Profile) = undefined;
 const Operation = enum {
     Add,
     Remove,
+    Get,
     List,
     Unknown,
 };
@@ -23,6 +24,7 @@ const Operation = enum {
 fn checkOperation(arg: []const u8) Operation {
     if (std.mem.eql(u8, arg, "add")) return Operation.Add;
     if (std.mem.eql(u8, arg, "remove")) return Operation.Remove;
+    if (std.mem.eql(u8, arg, "get")) return Operation.Get;
     if (std.mem.eql(u8, arg, "list")) return Operation.List;
     return Operation.Unknown;
 }
@@ -141,6 +143,20 @@ pub fn main() !void {
         for (profiles.items) |profile| {
             std.debug.print("Profile: {s}, Password: {s}\n", .{ profile.name, profile.password });
         }
+    } else if (operation == Operation.Get) {
+        if (args.len < 3) {
+            std.debug.print("Usage: get <name>\n", .{});
+            return;
+        }
+
+        const name = args[2];
+        for (profiles.items) |profile| {
+            if (std.mem.eql(u8, profile.name, name)) {
+                std.debug.print("Profile found: {s}, Password: {s}\n", .{ profile.name, profile.password });
+                return;
+            }
+        }
+        std.debug.print("Profile not found: {s}\n", .{name});
     } else {
         std.debug.print("Unknown operation: {s}\n", .{args[1]});
     }
