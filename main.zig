@@ -1,5 +1,5 @@
 const std = @import("std");
-const SAVE_FILE_PATH = "C:/Users/bjarn/Projects/zig/data/passwords.json";
+const SAVE_FILE_PATH = "YOUR_FILE_PATH";
 
 pub const Profile = struct {
     name: []const u8,
