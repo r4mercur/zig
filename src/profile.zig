@@ -107,6 +107,21 @@ pub const ProfileManager = struct {
         }
     }
 
+    pub fn updateProfile(self: *ProfileManager, name: []const u8, new_password: []const u8) !bool {
+        for (self.profiles.items) |*profile| {
+            if (std.mem.eql(u8, profile.name, name)) {
+                // Free the old password memory
+                self.allocator.free(profile.password);
+                // Duplicate the new password
+                const new_password_dup = try self.allocator.dupe(u8, new_password);
+                // Update the profile's password
+                profile.password = new_password_dup;
+                return true;
+            }
+        }
+        return false;
+    }
+
     fn freeProfileMemory(self: *ProfileManager) void {
         for (self.profiles.items) |*profile| {
             profile.deinit(self.allocator);

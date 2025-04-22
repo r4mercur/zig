@@ -6,6 +6,7 @@ pub const Operation = enum {
     Remove,
     List,
     Get,
+    Update,
     Unknown,
 };
 
@@ -18,6 +19,8 @@ pub fn checkOperation(operation: []const u8) Operation {
         return Operation.List;
     } else if (std.mem.eql(u8, operation, "get")) {
         return Operation.Get;
+    } else if (std.mem.eql(u8, operation, "update")) {
+        return Operation.Update;
     } else {
         return Operation.Unknown;
     }

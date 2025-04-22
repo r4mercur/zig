@@ -57,6 +57,18 @@ pub fn main() !void {
                 std.debug.print("Profile not found: {s}\n", .{args[2]});
             }
         },
+        .Update => {
+            if (args.len < 4) {
+                std.debug.print("Usage: update <name> <new_password>\n", .{});
+                return;
+            }
+
+            if (try profile_manager.updateProfile(args[2], args[3])) {
+                std.debug.print("Profile updated: {s}\n", .{args[2]});
+            } else {
+                std.debug.print("Profile not found: {s}\n", .{args[2]});
+            }
+        },
         .Unknown => {
             std.debug.print("Unknown operation: {s}\n", .{args[1]});
         },
